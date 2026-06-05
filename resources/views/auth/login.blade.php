@@ -65,19 +65,10 @@
                 </div>
             </form>
 
-            <div class="relative my-6">
-                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
-                <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-slate-400 font-bold tracking-wider">Entorno de Pruebas</span></div>
-            </div>
+            
 
             <div>
-    <a 
-        href="{{ route('dev.login') }}" 
-        class="w-full bg-slate-950 hover:bg-slate-800 text-slate-200 font-bold py-2.5 px-4 rounded-lg text-sm shadow-md transition-all flex items-center justify-center gap-2 border border-slate-700 text-center"
-    >
-        <span>Ingresar con Credenciales</span>
-        <i class="fa-solid fa-bolt text-amber-400"></i>
-    </a>
+   
 </div>
 
         </div>

@@ -25,7 +25,7 @@ class AuthController extends Controller
 
         $user = Usuario::where('correo', $request->correo)->first();
 
-        if ($user && Hash::check($request->contrasena, $user->password)) {
+        if ($user && Hash::check($request->contrasena, $user->contrasena)) {
             
             // Verificación de Equipo de Confianza (Hito 3)
             $cookieName = 'trusted_device_' . $user->id;
@@ -39,7 +39,7 @@ class AuthController extends Controller
                     // El equipo es de confianza y está vigente, saltamos la 2FA
                     Auth::login($user);
                     $request->session()->regenerate();
-                    return redirect()->intended('dashboard');
+                   return redirect()->intended('admin/dashboard');
                 }
             }
 
@@ -110,7 +110,7 @@ class AuthController extends Controller
                 );
             }
 
-            return redirect()->intended('dashboard');
+            return redirect()->intended('admin/dashboard');
         }
 
         return back()->withErrors(['totp_code' => 'El código es incorrecto o ha expirado.']);

@@ -18,8 +18,6 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
-// Ruta especial de bypass para desarrollo
-Route::get('/dev-login', [AuthController::class, 'devLogin'])->name('dev.login');
 
 // Rutas para usuarios NO autenticados (Invitados)
 Route::middleware('guest')->group(function () {
