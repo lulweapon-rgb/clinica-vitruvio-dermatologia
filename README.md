@@ -1,0 +1,1 @@
+# Analizador Dermatológico - Clínica Vitruvio
