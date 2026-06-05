@@ -10,6 +10,9 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\EvaluacionClinicaController;
 use App\Http\Controllers\AnalisisIAController;
 use App\Http\Controllers\SeguimientoEvolutivoController;
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ConstructorReporteController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -24,77 +27,59 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-// Rutas PRIVADAS (Solo usuarios autenticados)
+// Rutas del flujo de Autenticación de Dos Pasos (TOTP)
+// Se colocan aquí porque el usuario tiene una sesión temporal, aún no pasó el middleware auth
+Route::get('/2fa', [AuthController::class, 'show2faForm'])->name('2fa.index');
+Route::post('/2fa', [AuthController::class, 'verify2fa'])->name('2fa.verify');
+
+// Rutas PRIVADAS (Solo usuarios autenticados completamente)
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
-    // ==========================================
     // RUTA DEL DASHBOARD / PANEL PRINCIPAL
-    // ==========================================
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ==========================================
-    // MÓDULO 1: PACIENTES
+    // MÓDULOS CLÍNICOS (Acceso para Médicos y Administradores)
+    // Permiten el registro, detección y seguimiento cronológico de lesiones
     // ==========================================
     Route::post('/pacientes/{id}/restore', [PacienteController::class, 'restore'])->name('pacientes.restore');
     Route::resource('pacientes', PacienteController::class);
     Route::delete('/pacientes/{id}/force', [PacienteController::class, 'forceDelete'])->name('pacientes.force_delete');
 
-    // ==========================================
-    // MÓDULO 2: ESPECIALIDADES
-    // ==========================================
-    Route::post('/especialidades/{id}/restore', [EspecialidadController::class, 'restore'])->name('especialidades.restore');
-    Route::resource('especialidades', EspecialidadController::class);
-
-    // ==========================================
-    // MÓDULO 3: ROLES DE SISTEMA
-    // ==========================================
-    Route::post('/roles/{id}/restore', [RolController::class, 'restore'])->name('roles.restore');
-    Route::resource('roles', RolController::class);
-    Route::delete('/roles/{id}/force', [RolController::class, 'forceDelete'])->name('roles.force_delete');
-
-    // ==========================================
-    // MÓDULO 4: USUARIOS Y PERSONAL MÉDICO
-    // ==========================================
-    Route::post('/usuarios/{id}/restore', [UsuarioController::class, 'restore'])->name('usuarios.restore');
-    Route::resource('usuarios', UsuarioController::class);
-    Route::delete('/usuarios/{id}/force', [UsuarioController::class, 'forceDelete'])->name('usuarios.force_delete');
-
-    // ==========================================
-    // MÓDULO 5: EVALUACIONES CLÍNICAS (HISTORIAL)
-    // ==========================================
     Route::post('/evaluaciones/{id}/restore', [EvaluacionClinicaController::class, 'restore'])->name('evaluaciones.restore');
     Route::resource('evaluaciones', EvaluacionClinicaController::class);
     Route::delete('/evaluaciones/{id}/force', [EvaluacionClinicaController::class, 'forceDelete'])->name('evaluaciones.force_delete');
 
-    // ==========================================
-    // MÓDULO 6: ANÁLISIS DE IA (CNN)
-    // ==========================================
     Route::get('/analisis-ia', [AnalisisIAController::class, 'index'])->name('analisis.index');
     Route::post('/analisis-ia/{id}/ejecutar', [AnalisisIAController::class, 'ejecutarAnalisis'])->name('analisis.ejecutar');
 
-    // ==========================================
-    // MÓDULO 7: SEGUIMIENTO EVOLUTIVO (GEMELO DIGITAL)
-    // ==========================================
     Route::get('/seguimientos', [SeguimientoEvolutivoController::class, 'index'])->name('seguimientos.index');
     Route::get('/seguimientos/{id}/timeline', [SeguimientoEvolutivoController::class, 'timeline'])->name('seguimientos.timeline');
     Route::post('/seguimientos/{id}/store', [SeguimientoEvolutivoController::class, 'store'])->name('seguimientos.store');
-    // NUEVAS RUTAS PARA EDITAR Y ELIMINAR CONTROLES
     Route::put('/seguimientos/update/{id}', [SeguimientoEvolutivoController::class, 'update'])->name('seguimientos.update');
     Route::delete('/seguimientos/destroy/{id}', [SeguimientoEvolutivoController::class, 'destroy'])->name('seguimientos.destroy');
-    // NUEVA RUTA PARA RESTAURAR
     Route::post('/seguimientos/restore/{id}', [SeguimientoEvolutivoController::class, 'restore'])->name('seguimientos.restore');
 
     // ==========================================
-    // MÓDULO DE AUDITORÍA Y LOGS
+    // MÓDULOS ADMINISTRATIVOS (Acceso EXCLUSIVO para Administradores)
     // ==========================================
-    Route::get('/auditoria-logs', [\App\Http\Controllers\LogController::class, 'index'])->name('logs.index');
+    Route::middleware('can:access-admin')->group(function () {
+        
+        Route::post('/especialidades/{id}/restore', [EspecialidadController::class, 'restore'])->name('especialidades.restore');
+        Route::resource('especialidades', EspecialidadController::class);
 
-    // ==========================================
-    // MÓDULO DE REPORTES COMBINADOS (HITO 4)
-    // ==========================================
-    Route::get('/reportes', [\App\Http\Controllers\ReporteController::class, 'index'])->name('reportes.index');
+        Route::post('/roles/{id}/restore', [RolController::class, 'restore'])->name('roles.restore');
+        Route::resource('roles', RolController::class);
+        Route::delete('/roles/{id}/force', [RolController::class, 'forceDelete'])->name('roles.force_delete');
 
-    // Generador Interactivo (JOINs dinámicos)
-    Route::get('/constructor-reportes', [\App\Http\Controllers\ConstructorReporteController::class, 'index'])->name('reportes.constructor');
+        Route::post('/usuarios/{id}/restore', [UsuarioController::class, 'restore'])->name('usuarios.restore');
+        Route::resource('usuarios', UsuarioController::class);
+        Route::delete('/usuarios/{id}/force', [UsuarioController::class, 'forceDelete'])->name('usuarios.force_delete');
+
+        Route::get('/auditoria-logs', [LogController::class, 'index'])->name('logs.index');
+
+        Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+        Route::get('/constructor-reportes', [ConstructorReporteController::class, 'index'])->name('reportes.constructor');
+    });
 });
