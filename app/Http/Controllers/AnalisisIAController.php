@@ -58,15 +58,13 @@ class AnalisisIAController extends Controller
             if ($response->successful()) {
                 $resultado = $response->json();
                 
-                // Guardamos el resultado del algoritmo CNN
+                // Guardamos el resultado del algoritmo CNN (SIN tiempo_evolucion)
                 $evaluacion->update([
                     'ia_diagnostico' => $resultado['clase_detectada'],
                     'ia_porcentaje' => $resultado['confianza_porcentaje'],
-                    'tiempo_evolucion' => $resultado['tiempo_evolucion_estimado'], // Dato inferido por IA
                     'estado_validacion' => 'ANALIZADO'
                 ]);
 
-                // CORRECCIÓN: El log debe ejecutarse ANTES del return
                 LogAcceso::registrar("Ejecutó modelo CNN predictivo en evaluación ID: " . $id);
 
                 return redirect()->back()->with('success', 'Análisis CNN exitoso. Resultados guardados en el historial del paciente.');
@@ -74,7 +72,8 @@ class AnalisisIAController extends Controller
 
             return redirect()->back()->with('error', 'El motor CNN rechazó la solicitud.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'No se pudo establecer conexión con el motor de Inteligencia Artificial (Python apagado).');
+            // Ahora si hay un error SQL o de código, te dirá el error exacto en lugar de culpar a Python
+            return redirect()->back()->with('error', 'Error en el proceso: ' . $e->getMessage());
         }
     }
 }

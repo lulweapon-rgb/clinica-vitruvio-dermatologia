@@ -9,7 +9,6 @@ use App\Models\Paciente;
 use App\Models\PersonalMedico;
 use Illuminate\Support\Facades\Http;
 
-
 class EvaluacionClinicaController extends Controller
 {
     /**
@@ -25,14 +24,15 @@ class EvaluacionClinicaController extends Controller
         
         // Catálogos necesarios para los formularios
         $pacientes = Paciente::orderBy('nombre', 'asc')->get();
-        // Cambia tu consulta actual de médicos por esta:
-$medicos = PersonalMedico::with(['usuario' => function($query) {
-        $query->whereNull('eliminado_at'); // <--- Corrección aquí
-    }])
-    ->whereHas('usuario', function($query) {
-        $query->whereNull('eliminado_at'); // <--- Corrección aquí
-    })
-    ->get();
+        
+        // Consulta corregida para médicos activos
+        $medicos = PersonalMedico::with(['usuario' => function($query) {
+            $query->whereNull('eliminado_at'); 
+        }])
+        ->whereHas('usuario', function($query) {
+            $query->whereNull('eliminado_at'); 
+        })
+        ->get();
 
         return view('admin.evaluaciones.index', compact('evaluaciones', 'pacientes', 'medicos'));
     }
@@ -42,26 +42,33 @@ $medicos = PersonalMedico::with(['usuario' => function($query) {
      */
     public function store(Request $request)
     {
+        // 1. Validaciones (REGLAS EN TEXTO, NUNCA VARIABLES AQUÍ)
         $request->validate([
-            'paciente_id' => 'required|exists:pacientes,id',
-            'medico_id' => 'required|exists:personal_medico,id',
+            'paciente_id'         => 'required|exists:pacientes,id',
+            'medico_id'           => 'required|exists:personal_medico,id',
+            'ubicacion_anatomica' => 'required|string|max:255', 
+            
             'diagnostico_clinico' => 'required|string',
-            'imagen_lesion' => 'required|image|mimes:jpeg,png,jpg|max:5120'
+            'imagen_lesion'       => 'required|image|mimes:jpeg,png,jpg|max:5120'
         ]);
 
         try {
             // Guardado de la imagen en 'storage/app/public/lesiones'
             $rutaImagen = $request->file('imagen_lesion')->store('lesiones', 'public');
 
+            // 2. Guardado en la Base de Datos (AQUÍ SÍ USAMOS LAS VARIABLES DEL REQUEST)
             EvaluacionClinica::create([
-                'paciente_id' => $request->paciente_id,
-                'medico_id' => $request->medico_id,
+                'paciente_id'         => $request->paciente_id,
+                'medico_id'           => $request->medico_id,
+                'ubicacion_anatomica' => $request->ubicacion_anatomica,
+              
                 'diagnostico_clinico' => $request->diagnostico_clinico,
-                'sintoma_picazon' => $request->has('sintoma_picazon'),
-                'sintoma_sangrado' => $request->has('sintoma_sangrado'),
+                'sintoma_picazon'     => $request->has('sintoma_picazon'),
+                'sintoma_sangrado'    => $request->has('sintoma_sangrado'),
                 'sintoma_crecimiento' => $request->has('sintoma_crecimiento'),
-                'imagen_lesion' => $rutaImagen,
-                'estado_validacion' => 'PENDIENTE'
+                'imagen_lesion'       => $rutaImagen,
+                'estado_validacion'   => 'PENDIENTE',
+                'estado'              => 'ACTIVO' // Aseguramos que se cree como ACTIVO
             ]);
 
             return redirect()->back()->with('success', 'Triage e imagen cargados. Esperando análisis IA.');
@@ -77,23 +84,28 @@ $medicos = PersonalMedico::with(['usuario' => function($query) {
     {
         $evaluacion = EvaluacionClinica::withTrashed()->findOrFail($id);
 
+        // También agregamos la validación de los campos nuevos al editar
         $request->validate([
-            'paciente_id' => 'required|exists:pacientes,id',
-            'medico_id' => 'required|exists:personal_medico,id',
+            'paciente_id'         => 'required|exists:pacientes,id',
+            'medico_id'           => 'required|exists:personal_medico,id',
+            'ubicacion_anatomica' => 'required|string|max:255',
+            
             'diagnostico_clinico' => 'required|string',
-            'imagen_lesion' => 'nullable|image|mimes:jpeg,png,jpg|max:5120'
+            'imagen_lesion'       => 'nullable|image|mimes:jpeg,png,jpg|max:5120'
         ]);
 
         try {
             $datosActualizar = [
-                'paciente_id' => $request->paciente_id,
-                'medico_id' => $request->medico_id,
+                'paciente_id'         => $request->paciente_id,
+                'medico_id'           => $request->medico_id,
+                'ubicacion_anatomica' => $request->ubicacion_anatomica,
+                
                 'diagnostico_clinico' => $request->diagnostico_clinico
             ];
 
             // Reemplazo de imagen si se selecciona una nueva
             if ($request->hasFile('imagen_lesion')) {
-                if (Storage::disk('public')->exists($evaluacion->imagen_lesion)) {
+                if ($evaluacion->imagen_lesion && Storage::disk('public')->exists($evaluacion->imagen_lesion)) {
                     Storage::disk('public')->delete($evaluacion->imagen_lesion);
                 }
                 $datosActualizar['imagen_lesion'] = $request->file('imagen_lesion')->store('lesiones', 'public');
@@ -136,20 +148,19 @@ $medicos = PersonalMedico::with(['usuario' => function($query) {
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
-    // Una evaluación tiene muchos seguimientos evolutivos (Cronología)
-    public function seguimientos()
-    {
-        return $this->hasMany(SeguimientoEvolutivo::class, 'evaluacion_id')->orderBy('fecha_control', 'asc');
-    }
+
+    /**
+     * Borrado Físico Definitivo
+     */
     public function forceDelete($id)
     {
         try {
             $evaluacion = EvaluacionClinica::withTrashed()->findOrFail($id);
             
-            // Opcional: Si quieres borrar físicamente la foto del servidor para liberar espacio
-            // if (\Storage::disk('public')->exists($evaluacion->imagen_lesion)) {
-            //     \Storage::disk('public')->delete($evaluacion->imagen_lesion);
-            // }
+            // Borrar físicamente la foto del servidor para liberar espacio y no dejar basura
+            if ($evaluacion->imagen_lesion && Storage::disk('public')->exists($evaluacion->imagen_lesion)) {
+                Storage::disk('public')->delete($evaluacion->imagen_lesion);
+            }
 
             $evaluacion->forceDelete(); // Borrado Físico Definitivo
             return redirect()->back()->with('success', 'Evaluación eliminada físicamente del sistema.');

@@ -18,29 +18,35 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
-
+// ==========================================
 // Rutas para usuarios NO autenticados (Invitados)
+// ==========================================
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+// ==========================================
 // Rutas del flujo de Autenticación de Dos Pasos (TOTP)
-// Se colocan aquí porque el usuario tiene una sesión temporal, aún no pasó el middleware auth
+// ==========================================
 Route::get('/2fa', [AuthController::class, 'show2faForm'])->name('2fa.index');
 Route::post('/2fa', [AuthController::class, 'verify2fa'])->name('2fa.verify');
 
-// Rutas PRIVADAS (Solo usuarios autenticados completamente)
+
+// ==========================================
+// RUTAS PRIVADAS (Solo usuarios autenticados)
+// ==========================================
 Route::middleware('auth')->group(function () {
+    
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
-    // RUTA DEL DASHBOARD / PANEL PRINCIPAL
+    // RUTA DEL DASHBOARD / PANEL PRINCIPAL (Accesible para todos los logueados)
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // ==========================================
+    // ------------------------------------------
     // MÓDULOS CLÍNICOS (Acceso para Médicos y Administradores)
     // Permiten el registro, detección y seguimiento cronológico de lesiones
-    // ==========================================
+    // ------------------------------------------
     Route::post('/pacientes/{id}/restore', [PacienteController::class, 'restore'])->name('pacientes.restore');
     Route::resource('pacientes', PacienteController::class);
     Route::delete('/pacientes/{id}/force', [PacienteController::class, 'forceDelete'])->name('pacientes.force_delete');
@@ -59,10 +65,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/seguimientos/destroy/{id}', [SeguimientoEvolutivoController::class, 'destroy'])->name('seguimientos.destroy');
     Route::post('/seguimientos/restore/{id}', [SeguimientoEvolutivoController::class, 'restore'])->name('seguimientos.restore');
 
-    // ==========================================
+
+    // ------------------------------------------
     // MÓDULOS ADMINISTRATIVOS (Acceso EXCLUSIVO para Administradores)
-    // ==========================================
-    Route::middleware('can:access-admin')->group(function () {
+    // Protegidos por nuestro middleware personalizado 'superadmin'
+    // ------------------------------------------
+    Route::middleware(['superadmin'])->group(function () {
         
         Route::post('/especialidades/{id}/restore', [EspecialidadController::class, 'restore'])->name('especialidades.restore');
         Route::resource('especialidades', EspecialidadController::class);

@@ -9,7 +9,11 @@ class RolController extends Controller
 {
     public function index()
     {
-        $roles = Rol::withTrashed()->orderBy('id', 'asc')->get();
+        $roles = Rol::withTrashed()
+                    ->whereNotIn('nombre', ['ADMIN', 'ADMINISTRADOR', 'SUPERADMIN']) 
+                    ->orderBy('id', 'asc')
+                    ->get();
+                    
         return view('admin.roles.index', compact('roles'));
     }
 

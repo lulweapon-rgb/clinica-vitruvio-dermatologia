@@ -53,6 +53,18 @@ class Usuario extends Authenticatable
     {
         return $this->belongsTo(Rol::class, 'rol_id');
     }
+    public function isSuperAdmin()
+{
+    // Según tu imagen de DBeaver, el rol de SUPER ADMIN o ADMINISTRADOR es el ID 6 u 8. 
+    // Ajusta el nombre según lo que uses para el máximo nivel.
+    return $this->rol && ($this->rol->nombre === 'ADMINISTRADOR' || $this->rol->nombre === 'ADMIN');
+}
+
+public function isMedico()
+{
+    // Según tu imagen, el ID 3 o 9 es médico
+    return $this->rol && ($this->rol->nombre === 'medico' || $this->rol->nombre === 'USER');
+}
 
     // Un usuario PUEDE SER personal médico (Relación 1 a 1)
     public function personalMedico()

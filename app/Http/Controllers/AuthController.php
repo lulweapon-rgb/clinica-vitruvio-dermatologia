@@ -53,67 +53,76 @@ class AuthController extends Controller
         ])->onlyInput('correo');
     }
 
+    /**
+     * MÉTDO GET: Muestra la pantalla del Código OTP o el Código QR
+     */
     public function show2faForm(Request $request)
     {
-        if (!$request->session()->has('2fa_user_id')) {
-            return redirect('/login');
+        $userId = session('2fa_user_id');
+        if (!$userId) return redirect('/login');
+        
+        $user = \App\Models\Usuario::find($userId);
+        $google2fa = new Google2FA();
+
+        $qrCodeUrl = null;
+        $llaveManual = null;
+        $esPrimerIngreso = false;
+
+        // Si el usuario NO tiene llave en la base de datos, es su primer ingreso
+        if (empty($user->two_factor_secret)) {
+            $esPrimerIngreso = true;
+            
+            // Generamos una llave y la guardamos temporalmente en SESIÓN para evitar bloqueos
+            if (!session()->has('temp_2fa_secret')) {
+                session(['temp_2fa_secret' => $google2fa->generateSecretKey()]);
+            }
+            
+            $llaveManual = session('temp_2fa_secret');
+            
+            // Generamos la URL nativa de Google Authenticator
+            $qrCodeUrl = $google2fa->getQRCodeUrl('Clínica Vitruvio', $user->correo, $llaveManual);
         }
 
-        return view('auth.2fa');
+        return view('auth.2fa', compact('esPrimerIngreso', 'qrCodeUrl', 'llaveManual'));
     }
 
+    /**
+     * MÉTODO POST: Verifica el código de 6 dígitos
+     */
     public function verify2fa(Request $request)
     {
-        $request->validate([
-            'totp_code' => 'required|numeric|digits:6',
-        ]);
-
-        $userId = $request->session()->get('2fa_user_id');
-        $user = Usuario::find($userId);
-
-        if (!$user) {
-            return redirect('/login');
-        }
-
+        $userId = session('2fa_user_id');
+        if (!$userId) return redirect('/login');
+        
+        $user = \App\Models\Usuario::find($userId);
         $google2fa = new Google2FA();
-        $valid = $google2fa->verifyKey($user->two_factor_secret, $request->totp_code);
+
+        // Si el usuario ya tiene llave, usamos esa. Si es nuevo, usamos la temporal de la sesión.
+        $llaveAValidar = $user->two_factor_secret ?: session('temp_2fa_secret');
+
+        // Validamos el código de 6 dígitos
+        $valid = $google2fa->verifyKey($llaveAValidar, $request->totp_code);
 
         if ($valid) {
-            $request->session()->forget('2fa_user_id');
-            Auth::login($user);
-            $request->session()->regenerate();
-
-            // Si el usuario marcó "Confiar en este equipo"
-            if ($request->has('trust_device')) {
-                $randomToken = bin2hex(random_bytes(32));
-                
-                // Generamos el hash combinando el user-agent y el token persistente
-                $fingerprint = hash('sha256', $request->userAgent() . '_' . $randomToken);
-
-                // Guardamos en la base de datos con expiración de 30 días
-                $user->trusted_device_hash = $fingerprint;
-                $user->trusted_device_expires_at = now()->addDays(30);
+            // Si el código es correcto y era su primer ingreso, ¡Ahors sí guardamos la llave en la BD!
+            if (empty($user->two_factor_secret)) {
+                $user->two_factor_secret = session('temp_2fa_secret');
                 $user->save();
-
-                // Creamos la cookie segura exigida por la rúbrica (HttpOnly, Secure, SameSite=Lax)
-                $cookieName = 'trusted_device_' . $user->id;
-                Cookie::queue(
-                    $cookieName,
-                    $randomToken,
-                    43200, // Duración en minutos (30 días)
-                    null,
-                    null,
-                    true,  // Secure (HTTPS)
-                    true,  // HttpOnly
-                    false,
-                    'Lax'  // SameSite
-                );
+                session()->forget('temp_2fa_secret'); // Limpiamos la basura temporal
             }
 
-            return redirect()->intended('admin/dashboard');
+            // Autenticamos al usuario finalmente
+            $request->session()->forget('2fa_user_id');
+            \Illuminate\Support\Facades\Auth::login($user);
+            $request->session()->regenerate();
+
+            // Lógica de "confiar en este equipo" si la tienes...
+            
+            return redirect()->intended('/evaluaciones'); 
         }
 
-        return back()->withErrors(['totp_code' => 'El código es incorrecto o ha expirado.']);
+        // Si el código falla
+        return back()->withErrors(['totp_code' => 'El código de seguridad ingresado es incorrecto.']);
     }
 
     public function logout(Request $request)

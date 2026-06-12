@@ -7,32 +7,46 @@
 </head>
 <body style="font-family: sans-serif; background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
 
-    <div style="background-color: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; width: 100%;">
-        <h2 style="text-align: center; color: #1f2937;">Verificación de Seguridad</h2>
-        <p style="text-align: center; color: #4b5563; font-size: 14px;">Ingrese el código de 6 dígitos generado por su aplicación de autenticación (Google Authenticator, Authy, etc.).</p>
-
-        <form method="POST" action="{{ route('2fa.verify') }}" style="margin-top: 1.5rem;">
-            @csrf
-            
-            <div style="margin-bottom: 1rem;">
-                <label for="totp_code" style="display: block; font-size: 14px; color: #374151; margin-bottom: 0.5rem;">Código TOTP:</label>
-                <input type="text" name="totp_code" id="totp_code" maxlength="6" pattern="\d{6}" required autocomplete="off" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; text-align: center; letter-spacing: 0.5rem;">
-                
-                @error('totp_code')
-                    <span style="color: #ef4444; font-size: 12px; margin-top: 0.25rem; display: block;">{{ $message }}</span>
-                @enderror
-            </div>
-
-            <div style="margin-bottom: 1.5rem; display: flex; align-items: center;">
-                <input type="checkbox" name="trust_device" id="trust_device" value="1" style="margin-right: 0.5rem;">
-                <label for="trust_device" style="font-size: 13px; color: #4b5563;">Confiar en este equipo (No volver a pedir código por 30 días)</label>
-            </div>
-
-            <button type="submit" style="width: 100%; padding: 0.75rem; background-color: #2563eb; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">
-                Verificar y Entrar
-            </button>
-        </form>
+    <div class="p-8">
+    <div class="text-center mb-6">
+        <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">Verificación de Seguridad</h2>
+        <p class="text-sm text-slate-500 mt-1">Autenticación de Dos Factores (2FA)</p>
     </div>
+
+    @if($esPrimerIngreso)
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-6 text-center">
+            <h3 class="text-sm font-bold text-blue-800 uppercase mb-2"><i class="fa-solid fa-mobile-screen-button"></i> Configuración Inicial Requerida</h3>
+            <p class="text-xs text-blue-600 mb-4">Abre Google Authenticator en tu celular y escanea este código QR para vincular tu cuenta.</p>
+            
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($qrCodeUrl) }}" alt="Código QR" class="mx-auto rounded-lg shadow-sm border-2 border-white mb-4">
+            
+            <p class="text-[10px] text-slate-500 uppercase font-bold">O ingresa esta llave manualmente:</p>
+            <p class="text-xs font-mono font-black text-slate-800 bg-white inline-block px-3 py-1 rounded border mt-1">{{ $llaveManual }}</p>
+        </div>
+    @endif
+
+    <form action="{{ url('/2fa') }}" method="POST" class="space-y-5">
+        @csrf
+        
+        @if($errors->any())
+            <div class="p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-xs font-medium flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first() }}
+            </div>
+        @endif
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                {{ $esPrimerIngreso ? 'Ingresa el primer código generado' : 'Código de Autenticador' }}
+            </label>
+            <input type="text" name="totp_code" required autofocus maxlength="6" autocomplete="off" placeholder="Ej. 123456" 
+                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-center text-2xl tracking-[0.5em] font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-sm shadow-md transition-all uppercase tracking-wide flex items-center justify-center gap-2">
+            <span>Validar y Entrar</span> <i class="fa-solid fa-shield-halved"></i>
+        </button>
+    </form>
+</div>
 
 </body>
 </html>

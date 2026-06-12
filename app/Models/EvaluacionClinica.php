@@ -26,6 +26,8 @@ class EvaluacionClinica extends Model
         'imagen_lesion',
         'estado_validacion',
         'estado',
+        
+        'ubicacion_anatomica',
         'tiempo_evolucion',     // NUEVO
         'sintoma_picazon',      // NUEVO
         'sintoma_sangrado',     // NUEVO
