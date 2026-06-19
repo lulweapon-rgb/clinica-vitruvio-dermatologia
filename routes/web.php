@@ -89,7 +89,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/constructor-reportes', [ConstructorReporteController::class, 'index'])->name('reportes.constructor');
         
     });
-    Route::get('/lanzamiento-produccion', function () {
+    
+});
+Route::get('/lanzamiento-produccion', function () {
     try {
         // 1. Ejecuta las migraciones pendientes
         Artisan::call('migrate', ['--force' => true]);
@@ -101,5 +103,4 @@ Route::middleware('auth')->group(function () {
     } catch (\Exception $e) {
         return 'Ocurrió un error: ' . $e->getMessage();
     }
-});
 });
