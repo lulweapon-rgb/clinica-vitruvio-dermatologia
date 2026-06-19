@@ -9,6 +9,7 @@ use App\Http\Controllers\RolController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\EvaluacionClinicaController;
 use App\Http\Controllers\AnalisisIAController;
+use App\Http\Controllers\HistorialClinicoController;
 use App\Http\Controllers\SeguimientoEvolutivoController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\ReporteController;
@@ -40,20 +41,38 @@ Route::middleware('auth')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
-    // RUTA DEL DASHBOARD / PANEL PRINCIPAL (Accesible para todos los logueados)
+    // RUTA DEL DASHBOARD / PANEL PRINCIPAL
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ------------------------------------------
-    // MÓDULOS CLÍNICOS (Acceso para Médicos y Administradores)
-    // Permiten el registro, detección y seguimiento cronológico de lesiones
+    // MÓDULO 1: PACIENTES (CRUD Demográfico)
     // ------------------------------------------
     Route::post('/pacientes/{id}/restore', [PacienteController::class, 'restore'])->name('pacientes.restore');
     Route::resource('pacientes', PacienteController::class);
     Route::delete('/pacientes/{id}/force', [PacienteController::class, 'forceDelete'])->name('pacientes.force_delete');
 
+    // ------------------------------------------
+    // MÓDULO 2: HISTORIALES CLÍNICOS (Antecedentes Base)
+    // ------------------------------------------
+    Route::get('/historiales', [HistorialClinicoController::class, 'index'])->name('historiales.index');
+    Route::get('/historiales/crear/{paciente_id}', [HistorialClinicoController::class, 'create'])->name('historiales.create');
+    Route::post('/historiales/guardar/{paciente_id}', [HistorialClinicoController::class, 'store'])->name('historiales.store');
+    Route::get('/historiales/editar/{paciente_id}', [HistorialClinicoController::class, 'edit'])->name('historiales.edit');
+    Route::put('/historiales/actualizar/{paciente_id}', [HistorialClinicoController::class, 'update'])->name('historiales.update');
+    Route::get('/historiales/{paciente_id}', [HistorialClinicoController::class, 'show'])->name('historiales.show');
+    
+    // AGREGA ESTA LÍNEA PARA ELIMINAR:
+    Route::delete('/historiales/eliminar/{paciente_id}', [HistorialClinicoController::class, 'destroy'])->name('historiales.destroy');
+
+    // ------------------------------------------
+    // MÓDULO 3: EVALUACIONES Y TRIAGE IA (Flujo Asíncrono)
+    // ------------------------------------------
     Route::post('/evaluaciones/{id}/restore', [EvaluacionClinicaController::class, 'restore'])->name('evaluaciones.restore');
     Route::resource('evaluaciones', EvaluacionClinicaController::class);
     Route::delete('/evaluaciones/{id}/force', [EvaluacionClinicaController::class, 'forceDelete'])->name('evaluaciones.force_delete');
+    
+    // RUTA DEL ESPECIALISTA: Permite al Dermatólogo emitir el diagnóstico final (Movida a EvaluacionClinicaController)
+    Route::post('/evaluaciones/{id}/resolver', [EvaluacionClinicaController::class, 'resolverPorEspecialista'])->name('evaluaciones.resolver');
 
     Route::get('/analisis-ia', [AnalisisIAController::class, 'index'])->name('analisis.index');
     Route::post('/analisis-ia/{id}/ejecutar', [AnalisisIAController::class, 'ejecutarAnalisis'])->name('analisis.ejecutar');
@@ -64,11 +83,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/seguimientos/update/{id}', [SeguimientoEvolutivoController::class, 'update'])->name('seguimientos.update');
     Route::delete('/seguimientos/destroy/{id}', [SeguimientoEvolutivoController::class, 'destroy'])->name('seguimientos.destroy');
     Route::post('/seguimientos/restore/{id}', [SeguimientoEvolutivoController::class, 'restore'])->name('seguimientos.restore');
-
+    Route::get('/evaluaciones/crear/{paciente_id}', [EvaluacionClinicaController::class, 'create'])->name('evaluaciones.create_por_paciente');
+    Route::post('/evaluaciones/guardar/{paciente_id}', [EvaluacionClinicaController::class, 'store'])->name('evaluaciones.store_por_paciente');
 
     // ------------------------------------------
     // MÓDULOS ADMINISTRATIVOS (Acceso EXCLUSIVO para Administradores)
-    // Protegidos por nuestro middleware personalizado 'superadmin'
     // ------------------------------------------
     Route::middleware(['superadmin'])->group(function () {
         

@@ -59,7 +59,7 @@
             <a href="{{ route('evaluaciones.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('evaluaciones.*') ? 'bg-blue-900/50 text-white font-bold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                 <i class="fa-solid fa-notes-medical w-5 text-center"></i>
-                <span class="text-sm">Consultas / Evaluaciones</span>
+                <span class="text-sm">Historial Clinico / Evaluacion</span>
             </a>
 
             <a href="{{ route('analisis.index') }}" 

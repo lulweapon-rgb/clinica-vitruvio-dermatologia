@@ -26,4 +26,13 @@ class Paciente extends Model
         'estado' // <--- NUEVO CAMPO AÑADIDO
     ];
     protected $dates = ['deleted_at', 'created_at', 'updated_at'];
+    // El paciente tiene un historial de antecedentes "fijo"
+public function antecedentes() {
+    return $this->hasOne(AntecedenteMedico::class);
+}
+
+// El paciente tiene muchas consultas a lo largo del tiempo
+public function evaluaciones() {
+    return $this->hasMany(EvaluacionClinica::class)->orderBy('created_at', 'desc');
+}
 }

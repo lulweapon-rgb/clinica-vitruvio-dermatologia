@@ -17,41 +17,66 @@ class EvaluacionClinica extends Model
     const CREATED_AT = 'creado_at';
     const UPDATED_AT = 'actualizado_at';
 
-    protected $fillable = [
+    // ==========================================================
+    // ESTADOS DEL FLUJO DE TELEMEDICINA / TRIAGE ASÍNCRONO
+    // ==========================================================
+    const ESTADO_PENDIENTE = 'PENDIENTE_ESPECIALISTA'; // Fase 1 y 2
+    const ESTADO_RESUELTO  = 'RESUELTO_REMOTO';        // Fase 3 y 4 (Resolución a distancia)
+    const ESTADO_DERIVADO  = 'DERIVADO_PRESENCIAL';    // Fase 3 y 4 (Requiere ver al paciente)
+
+   protected $fillable = [
         'paciente_id',
         'medico_id',
-        'diagnostico_clinico',
+        'imagen_lesion',
         'ia_diagnostico',
         'ia_porcentaje',
-        'imagen_lesion',
         'estado_validacion',
         'estado',
         
+        // Fase 1: Motivo
+        'motivo_consulta',
+        'duracion_lesion',
+        
+        // Fase 2: Síntomas locales y sistémicos
+        'sintoma_prurito',
+        'sintoma_dolor',
+        'sintoma_sangrado',
+        'sintoma_parestesia',
+        'otros_sintomas_sistemicos',
+        
+        // Fase 3: Exploración Física
         'ubicacion_anatomica',
-        'tiempo_evolucion',     // NUEVO
-        'sintoma_picazon',      // NUEVO
-        'sintoma_sangrado',     // NUEVO
-        'sintoma_crecimiento'   // NUEVO
+        'tipo_lesion_morfologia',
+        'coloracion_lesion',
+        'consistencia_palpacion',
+        'distribucion_lesiones',
+        
+        // Fase 4: Dictamen del Especialista
+        'diagnostico_clinico',
+        'prueba_diagnostica',
+        'plan_tratamiento',
+        'factores_externos',
+    'aspecto_general',
+    'disposicion_lesiones'
+        
     ];
 
+    // ==========================================
     // RELACIONES DE BASE DE DATOS
+    // ==========================================
     
-    // Una evaluación pertenece a un Paciente
     public function paciente()
     {
         return $this->belongsTo(Paciente::class, 'paciente_id');
     }
 
-    // Una evaluación fue realizada por un Médico
     public function medico()
     {
         return $this->belongsTo(PersonalMedico::class, 'medico_id');
     }
-    // Dentro de app/Models/EvaluacionClinica.php
 
-// Una evaluación tiene muchos seguimientos evolutivos
-public function seguimientos()
-{
-    return $this->hasMany(SeguimientoEvolutivo::class, 'evaluacion_id')->orderBy('fecha_control', 'asc');
-}
+    public function seguimientos()
+    {
+        return $this->hasMany(SeguimientoEvolutivo::class, 'evaluacion_id')->orderBy('fecha_control', 'asc');
+    }
 }
