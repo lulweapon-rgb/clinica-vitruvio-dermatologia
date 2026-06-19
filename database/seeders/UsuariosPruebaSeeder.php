@@ -5,25 +5,28 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB; // <-- Necesario para manejar la tabla de roles
+use Illuminate\Support\Facades\DB;
 
 class UsuariosPruebaSeeder extends Seeder
 {
     public function run(): void
     {
         // ==========================================
-        // 1. CREAR LOS ROLES SI NO EXISTEN
+        // 1. CREAR ROLES SIN FORZAR EL ID (Modo estricto PostgreSQL)
         // ==========================================
-        // Esto evita el error de llave foránea (Foreign key violation)
+        
+        // Creamos o actualizamos buscando por NOMBRE, dejando que Postgres decida el ID
         DB::table('roles')->updateOrInsert(
-            ['id' => 1],
-            ['nombre' => 'Administrador'] // Nota: Si tu columna no se llama 'nombre', cámbiala aquí
+            ['nombre' => 'Administrador']
         );
+        // Rescatamos el ID que Postgres le haya asignado
+        $idAdmin = DB::table('roles')->where('nombre', 'Administrador')->value('id');
 
         DB::table('roles')->updateOrInsert(
-            ['id' => 2],
             ['nombre' => 'Medico']
         );
+        // Rescatamos el ID que Postgres le haya asignado
+        $idMedico = DB::table('roles')->where('nombre', 'Medico')->value('id');
 
         // ==========================================
         // 2. CREAR LOS USUARIOS DE PRUEBA
@@ -38,7 +41,7 @@ class UsuariosPruebaSeeder extends Seeder
                 'contrasena' => Hash::make('Admin123'),
                 'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
                 'estado' => 'ACTIVO',
-                'rol_id' => 1,
+                'rol_id' => $idAdmin, // <-- Usamos el ID rescatado
                 'rol_nombre' => 'Administrador'
             ]
         );
@@ -52,7 +55,7 @@ class UsuariosPruebaSeeder extends Seeder
                 'contrasena' => Hash::make('User123'),
                 'two_factor_secret' => 'KNRW24TMMJQXEZLJ',
                 'estado' => 'ACTIVO',
-                'rol_id' => 2,
+                'rol_id' => $idMedico, // <-- Usamos el ID rescatado
                 'rol_nombre' => 'Medico'
             ]
         );
