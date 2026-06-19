@@ -13,7 +13,7 @@ use App\Http\Controllers\SeguimientoEvolutivoController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\ConstructorReporteController;
-
+use Illuminate\Support\Facades\Artisan;
 Route::get('/', function () {
     return redirect('/login');
 });
@@ -87,5 +87,19 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
         Route::get('/constructor-reportes', [ConstructorReporteController::class, 'index'])->name('reportes.constructor');
+        
     });
+    Route::get('/lanzamiento-produccion', function () {
+    try {
+        // 1. Ejecuta las migraciones pendientes
+        Artisan::call('migrate', ['--force' => true]);
+        
+        // 2. Ejecuta el Seeder de usuarios
+        Artisan::call('db:seed', ['--class' => 'UsuariosPruebaSeeder', '--force' => true]);
+        
+        return '¡ÉXITO! Base de datos actualizada y Usuarios de prueba creados en Render.';
+    } catch (\Exception $e) {
+        return 'Ocurrió un error: ' . $e->getMessage();
+    }
+});
 });
