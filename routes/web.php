@@ -93,13 +93,45 @@ Route::middleware('auth')->group(function () {
 });
 Route::get('/lanzamiento-produccion', function () {
     try {
-        // 1. Ejecuta las migraciones pendientes
-        Artisan::call('migrate', ['--force' => true]);
-        
-        // 2. Ejecuta el Seeder de usuarios
-        Artisan::call('db:seed', ['--class' => 'UsuariosPruebaSeeder', '--force' => true]);
-        
-        return '¡ÉXITO! Base de datos actualizada y Usuarios de prueba creados en Render.';
+        // 1. Ejecutar migraciones pendientes
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+
+        // 2. Crear los roles directamente (SIN forzar el ID para que PostgreSQL no bloquee)
+        \Illuminate\Support\Facades\DB::table('roles')->updateOrInsert(['nombre' => 'Administrador']);
+        \Illuminate\Support\Facades\DB::table('roles')->updateOrInsert(['nombre' => 'Medico']);
+
+        // 3. Rescatar los IDs que PostgreSQL haya asignado automáticamente
+        $idAdmin = \Illuminate\Support\Facades\DB::table('roles')->where('nombre', 'Administrador')->value('id');
+        $idMedico = \Illuminate\Support\Facades\DB::table('roles')->where('nombre', 'Medico')->value('id');
+
+        // 4. Crear los Usuarios de Prueba con esos IDs seguros
+        \App\Models\Usuario::updateOrCreate(
+            ['correo' => 'admin@ejemplo.com'],
+            [
+                'nombre' => 'Admin',
+                'apellido_paterno' => 'Prueba',
+                'contrasena' => \Illuminate\Support\Facades\Hash::make('Admin123'),
+                'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
+                'estado' => 'ACTIVO',
+                'rol_id' => $idAdmin,
+                'rol_nombre' => 'Administrador'
+            ]
+        );
+
+        \App\Models\Usuario::updateOrCreate(
+            ['correo' => 'user@ejemplo.com'],
+            [
+                'nombre' => 'Usuario',
+                'apellido_paterno' => 'Regular',
+                'contrasena' => \Illuminate\Support\Facades\Hash::make('User123'),
+                'two_factor_secret' => 'KNRW24TMMJQXEZLJ',
+                'estado' => 'ACTIVO',
+                'rol_id' => $idMedico,
+                'rol_nombre' => 'Medico'
+            ]
+        );
+
+        return '¡ÉXITO TOTAL! Migraciones ejecutadas y Usuarios creados. Ya puedes iniciar sesión.';
     } catch (\Exception $e) {
         return 'Ocurrió un error: ' . $e->getMessage();
     }
