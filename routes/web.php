@@ -137,21 +137,21 @@ Route::get('/lanzamiento-produccion', function () {
     }
 });
 Route::get('/claves-del-inge', function () {
-    // 1. Forzar clave exacta del Administrador
+    // 1. Clave del Administrador (ENCRIPTADA)
     \Illuminate\Support\Facades\DB::table('usuarios')
         ->where('correo', 'admin@ejemplo.com')
         ->update([
-            'two_factor_secret' => 'JBSWY3DPEHPK3PXP', // La llave exacta del Inge
-            'two_factor_enabled' => true // Saltamos la pantalla de escanear QR
-        ]);
-
-    // 2. Forzar clave exacta del Usuario Regular
-    \Illuminate\Support\Facades\DB::table('usuarios')
-        ->where('correo', 'user@ejemplo.com')
-        ->update([
-            'two_factor_secret' => 'KNRW24TMMJQXEZLJ', // La llave exacta del Inge
+            'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), // <-- Encriptación activada
             'two_factor_enabled' => true
         ]);
 
-    return '¡LISTO! Las claves estrictas del ingeniero han sido configuradas. Ya puede iniciar sesión.';
+    // 2. Clave del Usuario Regular (ENCRIPTADA)
+    \Illuminate\Support\Facades\DB::table('usuarios')
+        ->where('correo', 'user@ejemplo.com')
+        ->update([
+            'two_factor_secret' => encrypt('KNRW24TMMJQXEZLJ'), // <-- Encriptación activada
+            'two_factor_enabled' => true
+        ]);
+
+    return '¡CLAVES DEL INGENIERO ENCRIPTADAS CON ÉXITO! Ya puedes iniciar sesión con los códigos del Authenticator.';
 });
