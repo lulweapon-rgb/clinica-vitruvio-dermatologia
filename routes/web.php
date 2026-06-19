@@ -136,11 +136,22 @@ Route::get('/lanzamiento-produccion', function () {
         return 'Ocurrió un error: ' . $e->getMessage();
     }
 });
-Route::get('/reset-2fa', function () {
-    // Limpiamos las llaves secretas de los usuarios de prueba
-    \Illuminate\Support\Facades\DB::table('usuarios')->update([
-        'two_factor_secret' => null,
-        'two_factor_enabled' => false
-    ]);
-    return '¡2FA RESETEADO! Ve al /login, ingresa con tu usuario y escanea el nuevo Código QR.';
+Route::get('/claves-del-inge', function () {
+    // 1. Forzar clave exacta del Administrador
+    \Illuminate\Support\Facades\DB::table('usuarios')
+        ->where('correo', 'admin@ejemplo.com')
+        ->update([
+            'two_factor_secret' => 'JBSWY3DPEHPK3PXP', // La llave exacta del Inge
+            'two_factor_enabled' => true // Saltamos la pantalla de escanear QR
+        ]);
+
+    // 2. Forzar clave exacta del Usuario Regular
+    \Illuminate\Support\Facades\DB::table('usuarios')
+        ->where('correo', 'user@ejemplo.com')
+        ->update([
+            'two_factor_secret' => 'KNRW24TMMJQXEZLJ', // La llave exacta del Inge
+            'two_factor_enabled' => true
+        ]);
+
+    return '¡LISTO! Las claves estrictas del ingeniero han sido configuradas. Ya puede iniciar sesión.';
 });
