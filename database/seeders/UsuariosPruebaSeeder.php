@@ -32,32 +32,30 @@ class UsuariosPruebaSeeder extends Seeder
         // 2. CREAR LOS USUARIOS DE PRUEBA
         // ==========================================
         
-        // Administrador
-        Usuario::updateOrCreate(
-            ['correo' => 'admin@ejemplo.com'],
-            [
-                'nombre' => 'Admin',
-                'apellido_paterno' => 'Prueba',
-                'contrasena' => Hash::make('Admin123'),
-                'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
-                'estado' => 'ACTIVO',
-                'rol_id' => $idAdmin, // <-- Usamos el ID rescatado
-                'rol_nombre' => 'Administrador'
-            ]
-        );
+        \App\Models\Usuario::updateOrCreate(
+    ['correo' => 'admin@prueba.com'], // Correo exacto del requisito
+    [
+        'nombre' => 'Admin',
+        'apellido_paterno' => 'Prueba',
+        'contrasena' => \Illuminate\Support\Facades\Hash::make('Admin123!'), // Contraseña exacta
+        'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'),
+        'estado' => 'ACTIVO',
+        'rol_id' => $idAdmin,
+        'rol_nombre' => 'Administrador'
+    ]
+);
 
-        // Usuario Regular (Médico)
-        Usuario::updateOrCreate(
-            ['correo' => 'user@ejemplo.com'],
-            [
-                'nombre' => 'Usuario',
-                'apellido_paterno' => 'Regular',
-                'contrasena' => Hash::make('User123'),
-                'two_factor_secret' => 'KNRW24TMMJQXEZLJ',
-                'estado' => 'ACTIVO',
-                'rol_id' => $idMedico, // <-- Usamos el ID rescatado
-                'rol_nombre' => 'Medico'
-            ]
-        );
+\App\Models\Usuario::updateOrCreate(
+    ['correo' => 'user@prueba.com'], // Correo exacto del requisito
+    [
+        'nombre' => 'Usuario',
+        'apellido_paterno' => 'Regular',
+        'contrasena' => \Illuminate\Support\Facades\Hash::make('User123!'), // Contraseña exacta
+        'two_factor_secret' => encrypt('KNRW24TMMJQXEZLJ'),
+        'estado' => 'ACTIVO',
+        'rol_id' => $idMedico,
+        'rol_nombre' => 'Medico'
+    ]
+);
     }
 }
