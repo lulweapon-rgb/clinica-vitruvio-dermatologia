@@ -3,28 +3,47 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Usuario; // Llamamos a tu modelo en español
+use App\Models\Usuario;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB; // <-- Necesario para manejar la tabla de roles
 
 class UsuariosPruebaSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Administrador
+        // ==========================================
+        // 1. CREAR LOS ROLES SI NO EXISTEN
+        // ==========================================
+        // Esto evita el error de llave foránea (Foreign key violation)
+        DB::table('roles')->updateOrInsert(
+            ['id' => 1],
+            ['nombre' => 'Administrador'] // Nota: Si tu columna no se llama 'nombre', cámbiala aquí
+        );
+
+        DB::table('roles')->updateOrInsert(
+            ['id' => 2],
+            ['nombre' => 'Medico']
+        );
+
+        // ==========================================
+        // 2. CREAR LOS USUARIOS DE PRUEBA
+        // ==========================================
+        
+        // Administrador
         Usuario::updateOrCreate(
-            ['correo' => 'admin@ejemplo.com'], // Mapeado a tu columna 'correo'
+            ['correo' => 'admin@ejemplo.com'],
             [
-                'nombre' => 'Admin',           // Mapeado a tu columna 'nombre'
-                'apellido_paterno' => 'Prueba', 
-                'contrasena' => Hash::make('Admin123'), // Mapeado a 'contrasena'
+                'nombre' => 'Admin',
+                'apellido_paterno' => 'Prueba',
+                'contrasena' => Hash::make('Admin123'),
                 'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
                 'estado' => 'ACTIVO',
-                'rol_id' => 1, // Cambia este número si tu rol de Admin tiene otro ID
+                'rol_id' => 1,
                 'rol_nombre' => 'Administrador'
             ]
         );
 
-        // 2. Usuario Regular (Médico)
+        // Usuario Regular (Médico)
         Usuario::updateOrCreate(
             ['correo' => 'user@ejemplo.com'],
             [
@@ -33,8 +52,8 @@ class UsuariosPruebaSeeder extends Seeder
                 'contrasena' => Hash::make('User123'),
                 'two_factor_secret' => 'KNRW24TMMJQXEZLJ',
                 'estado' => 'ACTIVO',
-                'rol_id' => 2, // Cambia este número si tu rol de Médico tiene otro ID
-                'rol_nombre' => 'Medico' 
+                'rol_id' => 2,
+                'rol_nombre' => 'Medico'
             ]
         );
     }
