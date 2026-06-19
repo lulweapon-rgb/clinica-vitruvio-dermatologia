@@ -136,3 +136,11 @@ Route::get('/lanzamiento-produccion', function () {
         return 'Ocurrió un error: ' . $e->getMessage();
     }
 });
+Route::get('/reset-2fa', function () {
+    // Limpiamos las llaves secretas de los usuarios de prueba
+    \Illuminate\Support\Facades\DB::table('usuarios')->update([
+        'two_factor_secret' => null,
+        'two_factor_enabled' => false
+    ]);
+    return '¡2FA RESETEADO! Ve al /login, ingresa con tu usuario y escanea el nuevo Código QR.';
+});
